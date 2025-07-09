@@ -1,24 +1,30 @@
 # aws_logs_to_s3
 
-This module compresses individual log files from a directory and uploads each one as a separate `.tar.gz` archive to an AWS S3 bucket.
+This module compresses every file inside a target directory into **individual `.tar.gz` archives**, then uploads each one separately to an AWS S3 bucket.  
+It is designed for secure, timestamped, automated log offloading — using only the AWS Free Tier and CLI-based operations.
 
 ---
 
 ## Function
 
-- Compresses each file inside a given directory individually
-- Uploads each resulting `.tar.gz` file to a specified S3 bucket
-- Generates a local upload log: `logs/upload.log`
-- Compatible with AWS Free Tier (5GB S3 always free)
+- Accepts a directory containing log files
+- Compresses **each file** into a separate `.tar.gz` (not a single archive)
+- Uploads each archive independently to a `logs/` folder inside the S3 bucket
+- Records a detailed local log at `logs/upload.log`
 
 ---
 
 ## Requirements
 
 - AWS account (Free Tier eligible)
-- IAM user with `s3:PutObject` permission for the target bucket
+- S3 bucket created (e.g., `mikeniner-logs-2025`)
+- IAM user with `s3:PutObject` permission scoped to:
+```
+
+arn\:aws\:s3:::your-bucket-name/logs/\*
+
+````
 - AWS CLI installed and configured (`aws configure`)
-- Existing S3 bucket (e.g. `mikeniner-logs-2025`)
 
 ---
 
@@ -30,16 +36,16 @@ make upload
 
 This will:
 
-1. Traverse all files inside `../input_logs/`
-2. Compress each file into its own `.tar.gz` archive
-3. Upload each archive individually to `s3://<bucket>/logs/`
+1. Locate all files inside `../input_logs/`
+2. Compress each one individually into a `.tar.gz` file
+3. Upload each archive to `s3://<bucket>/logs/`
 
-Other targets:
+Additional targets:
 
 ```bash
-make log     # View upload logs
-make clean   # Remove temporary .tar.gz files from /tmp
-make help    # Show available targets
+make log     # Show upload history from logs/upload.log
+make clean   # Remove temporary tar.gz archives from /tmp
+make help    # Display available Makefile commands
 ```
 
 ---
@@ -50,43 +56,37 @@ make help    # Show available targets
 ./aws_logs_to_s3.sh ../input_logs mikeniner-logs-2025
 ```
 
-This uploads all files from `../input_logs` as compressed archives.
-
 ---
 
-## Cron automation
+## Cron Automation
 
-Example: run every hour
+To run the script every hour:
 
 ```cron
 0 * * * * /full/path/to/aws_logs_to_s3.sh /full/path/to/input_logs your-bucket-name
 ```
 
-Make sure to use **absolute paths** in cron jobs.
-Optional: redirect stdout/stderr to files or use `logger`.
+* Always use **absolute paths**
+* Redirect output to files or use `logger` if required
 
 ---
 
 ## DevOps Integration & Evolution
 
-This module is built for infrastructure pipelines and can evolve toward:
+This module is designed for audit pipelines and remote log offloading. It can evolve into:
 
-* **CloudWatch Logs**: trigger alarms or indexing based on S3 uploads
-* **AWS Lambda**: automatic post-processing on upload
-* **Athena**: query `.log` contents via SQL directly from S3
-* **SSM RunCommand**: remote execution from EC2 nodes
-* **S3 EventBridge integration**: trigger agentic workflows or n8n flows
-
----
-
-## DevOps Design Principles
-
-* Shell-first execution (`bash`, no frameworks)
-* Minimal IAM access (least privilege via inline policy)
-* Timestamped uploads (UTC ISO-safe filenames)
-* Clean logs and failure handling
-* Stateless, portable, cron-compatible
+* **CloudWatch integration** for alerting and indexing
+* **Lambda triggers** on upload for validation or enrichment
+* **Athena queries** for on-demand log inspection via SQL
+* **SSM RunCommand** to orchestrate remote execution from EC2
+* **EventBridge rules** for multi-agent or n8n-driven workflows
 
 ---
 
-**Built for command-line automation, audit pipelines, and operational observability.**
+## Operational Design Principles
+
+* No frameworks — built entirely with `bash`, `awscli`, and core tools
+* Input/output is always explicit and observable
+* No side effects — files are temporary and cleaned after upload
+* IAM policies are minimal and purpose-specific
+* Compatible with cron, CI/CD, and agentic pipelines
