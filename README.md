@@ -58,4 +58,3 @@ All material is © 2025 Mike Niner Bravog.
 For commercial use or training customization, please contact directly.
 
 ---
-# aws-devops-pocs
